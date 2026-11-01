@@ -1,0 +1,556 @@
+{
+ "info": {
+  "_postman_id": "a91e5d3c-6f81-4b12-9c98-dfd80761a293",
+  "name": "Django AI / RAG Backend Service API",
+  "description": "Assignment 3A: Auth, Documents, LLM Q&A with prompt templates, document ingestion into FAISS, RAG query with source chunks, and paginated AI query history.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost:8000/api",
+   "type": "string"
+  },
+  {
+   "key": "auth_token",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "document_id",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "Auth",
+   "item": [
+    {
+     "name": "Register User",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "var jsonData = pm.response.json();",
+         "if (jsonData.token) {",
+         "    pm.collectionVariables.set('auth_token', jsonData.token);",
+         "    console.log('Saved auth_token:', jsonData.token);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"Password123!\",\n    \"email\": \"testuser@example.com\"\n}"
+      },
+      "url": {
+       "raw": "{{base_url}}/auth/register/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "auth",
+        "register",
+        ""
+       ]
+      },
+      "description": "Registers a new user and returns an authentication token. Also automatically updates the collection variable 'auth_token'."
+     },
+     "response": []
+    },
+    {
+     "name": "Login User",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "exec": [
+         "var jsonData = pm.response.json();",
+         "if (jsonData.token) {",
+         "    pm.collectionVariables.set('auth_token', jsonData.token);",
+         "    console.log('Updated auth_token:', jsonData.token);",
+         "}"
+        ],
+        "type": "text/javascript"
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"Password123!\"\n}"
+      },
+      "url": {
+       "raw": "{{base_url}}/auth/login/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "auth",
+        "login",
+        ""
+       ]
+      },
+      "description": "Authenticates user credentials and generates a new session token, auto-saving it to collection variables."
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "Documents",
+   "item": [
+    {
+     "name": "Upload Document (JSON body)",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"title\": \"System Architecture Overview\",\n    \"content\": \"This document outlines the layered enterprise service architecture, filter layer token middleware, and Django ORM persistence models.\"\n}"
+      },
+      "url": {
+       "raw": "{{base_url}}/documents/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "documents",
+        ""
+       ]
+      },
+      "description": "Upload a document using JSON payload with title and content."
+     },
+     "response": [],
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "var jsonData = pm.response.json();",
+         "if (jsonData.id) { pm.collectionVariables.set('document_id', jsonData.id); }"
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "name": "Upload Document (File Multipart)",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "body": {
+       "mode": "formdata",
+       "formdata": [
+        {
+         "key": "title",
+         "value": "Project Specification",
+         "type": "text"
+        },
+        {
+         "key": "file",
+         "type": "file",
+         "src": []
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{base_url}}/documents/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "documents",
+        ""
+       ]
+      },
+      "description": "Uploads a document via multipart/form-data. Validates file size (max 5MB) and allowed extensions."
+     },
+     "response": []
+    },
+    {
+     "name": "List Documents (Paginated)",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/documents/?page=1&page_size=10",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "documents",
+        ""
+       ],
+       "query": [
+        {
+         "key": "page",
+         "value": "1"
+        },
+        {
+         "key": "page_size",
+         "value": "10"
+        }
+       ]
+      },
+      "description": "Lists documents belonging to the requesting user with count, next, previous, and results."
+     },
+     "response": []
+    },
+    {
+     "name": "Get Document by ID",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/documents/1/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "documents",
+        "1",
+        ""
+       ]
+      },
+      "description": "Retrieves a single document. Returns 404 if not found or not owned by the requester."
+     },
+     "response": []
+    },
+    {
+     "name": "Delete Document by ID",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/documents/1/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "documents",
+        "1",
+        ""
+       ]
+      },
+      "description": "Deletes the document. Returns 204 No Content on success, 403 if requester is not the owner, and 404 if not found."
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "Queries",
+   "item": [
+    {
+     "name": "Create Query",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"query_text\": \"Summarize key features of the documents uploaded today.\"\n}"
+      },
+      "url": {
+       "raw": "{{base_url}}/query/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "query",
+        ""
+       ]
+      },
+      "description": "Executes a query and creates a QueryLog persistence entry."
+     },
+     "response": []
+    },
+    {
+     "name": "List Query History (Paginated)",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/queries/?page=1&page_size=10",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "queries",
+        ""
+       ],
+       "query": [
+        {
+         "key": "page",
+         "value": "1"
+        },
+        {
+         "key": "page_size",
+         "value": "10"
+        }
+       ]
+      },
+      "description": "Retrieves paginated query history for the requesting user."
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "AI / RAG (Assignment 3A)",
+   "item": [
+    {
+     "name": "Ask AI (prompt template)",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/ask-ai",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "ask-ai"
+       ]
+      },
+      "description": "LLM Q&A. The prompt is rendered through the ask_ai_v1 template (system rules + <user_question> delimiters) before reaching Claude.",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"prompt\": \"Explain retrieval-augmented generation in two sentences.\"\n}"
+      }
+     },
+     "response": []
+    },
+    {
+     "name": "Ingest Document",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/ingest-doc",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "ingest-doc"
+       ]
+      },
+      "description": "Chunks the document (800 chars, 150 overlap), embeds chunks with all-MiniLM-L6-v2 and stores them in the user's FAISS index. Returns status and chunk_count.",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"document_id\": {{document_id}}\n}"
+      }
+     },
+     "response": []
+    },
+    {
+     "name": "RAG Query",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/rag-query",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "rag-query"
+       ]
+      },
+      "description": "Retrieves top-k chunks from the user's FAISS index and answers from them. Response includes answer + sources[{document_id, chunk_text, ...}].",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n    \"query\": \"What are the key features of the system?\"\n}"
+      }
+     },
+     "response": []
+    },
+    {
+     "name": "AI Query History (Paginated)",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Token {{auth_token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base_url}}/query-history?page=1&page_size=10",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "query-history"
+       ],
+       "query": [
+        {
+         "key": "page",
+         "value": "1"
+        },
+        {
+         "key": "page_size",
+         "value": "10"
+        }
+       ]
+      },
+      "description": "Paginated history of the requester's ask-ai and rag-query calls (same pagination as Assignment 2)."
+     },
+     "response": []
+    }
+   ]
+  },
+  {
+   "name": "Documentation",
+   "item": [
+    {
+     "name": "OpenAPI Schema",
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/schema/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "schema",
+        ""
+       ]
+      },
+      "description": "Returns raw OpenAPI 3.0 YAML/JSON specification schema."
+     },
+     "response": []
+    },
+    {
+     "name": "Swagger UI",
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/docs/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "docs",
+        ""
+       ]
+      },
+      "description": "Interactive Swagger UI."
+     },
+     "response": []
+    },
+    {
+     "name": "ReDoc UI",
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/redoc/",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "redoc",
+        ""
+       ]
+      },
+      "description": "Interactive ReDoc UI."
+     },
+     "response": []
+    }
+   ]
+  }
+ ]
+}

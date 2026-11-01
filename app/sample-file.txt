@@ -1,0 +1,9 @@
+# Project System Overview
+
+This is a sample document for testing the document ingestion and processing service.
+
+Key Features:
+- Microservice Layered Architecture
+- Custom Token Authentication via Filter Layer
+- File size validation and content extraction
+- Database persistence using Django ORM
