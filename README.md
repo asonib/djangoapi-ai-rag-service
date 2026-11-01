@@ -25,7 +25,7 @@ All four endpoints need the same `Authorization: Token <token>` header as the As
 
 | Concern      | Choice | Where |
 |--------------|--------|-------|
-| LLM          | Anthropic Claude via the official `anthropic` SDK (Messages API). Model is set with `ANTHROPIC_MODEL` (default `claude-sonnet-4-5`). Temperature is 0.2 and max tokens is 1024. | `app/services/implementations/anthropic_llm_service_impl.py` |
+| LLM          | Anthropic Claude via the official `anthropic` SDK (Messages API). Model is set with `ANTHROPIC_MODEL` (default `claude-sonnet-4-5`). Max tokens is 1024. No `temperature` is sent: anthropic SDK 2.x removed sampling parameters, so answer style is controlled by the prompt templates. | `app/services/implementations/anthropic_llm_service_impl.py` |
 | Embeddings   | `sentence-transformers/all-MiniLM-L6-v2` runs locally and gives 384-dimensional vectors. Vectors are L2-normalised. No API key is needed. | `app/services/implementations/sentence_transformer_embedding_service_impl.py` |
 | Vector store | **FAISS** (`faiss-cpu`) is used for every vector operation in this project. | `app/services/implementations/faiss_vector_store_impl.py` |
 | Prompting    | Versioned prompt templates (`ask_ai_v1`, `rag_query_v1`) | `app/prompts/templates.py` |

@@ -13,12 +13,13 @@ class AnthropicLLMService(ILLMService):
 
     def __init__(self, api_key: str, model: str,
                  max_tokens: int = AIConfigConstants.LLM_MAX_TOKENS,
-                 temperature: float = AIConfigConstants.LLM_TEMPERATURE,
                  timeout: float = AIConfigConstants.LLM_TIMEOUT_SECONDS):
+        # Note: no `temperature` / `top_p` here. anthropic SDK 2.x removed these
+        # sampling params from messages.create(), and current Claude models no
+        # longer accept them. Answer style is controlled by the prompt templates.
         self._api_key = api_key
         self._model = model
         self._max_tokens = max_tokens
-        self._temperature = temperature
         self._timeout = timeout
         self._client = None
 
@@ -45,7 +46,6 @@ class AnthropicLLMService(ILLMService):
             response = client.messages.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                temperature=self._temperature,
                 system=system,
                 messages=messages,
             )

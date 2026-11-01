@@ -49,7 +49,6 @@ class AIConfigConstants:
     # ---- LLM ----
     LLM_PROVIDER = "anthropic"
     LLM_MAX_TOKENS = 1024
-    LLM_TEMPERATURE = 0.2
     LLM_TIMEOUT_SECONDS = 60
 
     # ---- Input limits ----
